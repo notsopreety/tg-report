@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Report Forum</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet" />
+  <style>
+    body {
+      font-family: 'Poppins', sans-serif;
+      margin: 0;
+      padding: 0;
+      overflow-x: hidden;
+      background: #1a2525;
+    }
+    canvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: -1;
+    }
+    .glass {
+      background: rgba(255, 255, 255, 0.15);
+      backdrop-filter: blur(15px);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+    }
+    .spinner {
+      display: inline-block;
+      width: 20px;
+      height: 20px;
+      border: 3px solid rgba(255, 255, 255, 0.3);
+      border-radius: 50%;
+      border-top-color: #fff;
+      animation: spin 1s ease-in-out infinite;
+      margin-right: 8px;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body class="min-h-screen flex items-center justify-center px-4">
+  <canvas id="bgCanvas"></canvas>
+
+  <div id="formContainer" class="glass p-6 sm:p-10 w-full max-w-xl rounded-3xl shadow-2xl animate-fadeIn">
+    <h2 class="text-3xl sm:text-4xl font-bold text-center text-white mb-8">📢 Submit a Report</h2>
+    <form id="reportForm" class="space-y-6">
+      <div>
+        <label class="block mb-1 text-sm font-semibold text-white">👤 Name</label>
+        <input type="text" name="name" required class="w-full px-5 py-3 rounded-xl border border-white/40 bg-white/30 text-white placeholder-white/70 focus:ring-4 focus:ring-purple-400 transition" />
+      </div>
+      <div>
+        <label class="block mb-1 text-sm font-semibold text-white">📧 Email</label>
+        <input type="email" name="email" required class="w-full px-5 py-3 rounded-xl border border-white/40 bg-white/30 text-white placeholder-white/70 focus:ring-4 focus:ring-purple-400 transition" />
+      </div>
+      <div>
+        <label class="block mb-1 text-sm font-semibold text-white">🗂 Report Type</label>
+        <select name="type" required class="w-full px-5 py-3 rounded-xl border border-white/40 bg-white/30 text-white focus:ring-4 focus:ring-purple-400 transition">
+          <option value="Bug">🐞 Bug</option>
+          <option value="Abuse">🚨 Abuse</option>
+          <option value="Suggestion">💡 Suggestion</option>
+          <option value="Other">📦 Other</option>
+        </select>
+      </div>
+      <div>
+        <label class="block mb-1 text-sm font-semibold text-white">📝 Message</label>
+        <textarea name="message" rows="4" required class="w-full px-5 py-3 rounded-xl border border-white/40 bg-white/30 text-white placeholder-white/70 focus:ring-4 focus:ring-purple-400 transition resize-none"></textarea>
+      </div>
+      <div>
+        <label class="block mb-1 text-sm font-semibold text-white">📎 Upload Proof (optional)</label>
+        <input type="file" name="proof" accept="image/*,video/*,.pdf" class="w-full file:px-4 file:py-2 file:rounded-full file:border-0 file:bg-purple-200 file:text-purple-900 hover:file:bg-purple-300 text-sm transition" />
+      </div>
+      <div class="text-center">
+        <button type="submit" id="submitButton" class="bg-gradient-to-r from-purple-500 to-indigo-500 text-white px-8 py-3 rounded-full font-semibold shadow-lg hover:from-indigo-500 hover:to-purple-600 transition transform hover:scale-105 active:scale-95">
+          <span id="buttonText">🚀 Submit Report</span>
+          <span id="loadingSpinner" class="spinner hidden"></span>
+        </button>
+      </div>
+    </form>
+
+    <div id="toast" class="hidden mt-6 text-green-100 bg-green-700/70 px-6 py-3 rounded-xl text-center font-semibold shadow-sm">
+      ✅ Thank you! Your report has been submitted.
+    </div>
+    <div id="errorMessage" class="hidden mt-6 text-red-100 bg-red-700/70 px-6 py-3 rounded-xl text-center font-semibold shadow-sm">
+      ❌ Something went wrong. Please try again.
+    </div>
+  </div>
+
+  <script>
+    // Canvas Background Animation (unchanged)
+    const canvas = document.getElementById('bgCanvas');
+    const ctx = canvas.getContext('2d');
+
+    function resizeCanvas() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    }
+    resizeCanvas();
+    window.addEventListener('resize', resizeCanvas);
+
+    const nodes = [];
+    const numNodes = 20;
+
+    class Node {
+      constructor() {
+        this.x = Math.random() * canvas.width;
+        this.y = Math.random() * canvas.height;
+        this.vx = (Math.random() - 0.5) * 2;
+        this.vy = (Math.random() - 0.5) * 2;
+        this.color = Math.random() > 0.8 ? '#ff4040' : '#40c4ff';
+      }
+
+      update() {
+        this.x += this.vx;
+        this.y += this.vy;
+        if (this.x < 0 || this.x > canvas.width) this.vx *= -1;
+        if (this.y < 0 || this.y > canvas.height) this.vy *= -1;
+      }
+
+      draw() {
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, 3, 0, Math.PI * 2);
+        ctx.fillStyle = this.color;
+        ctx.fill();
+      }
+    }
+
+    for (let i = 0; i < numNodes; i++) {
+      nodes.push(new Node());
+    }
+
+    function animate() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      nodes.forEach(node => {
+        node.update();
+        node.draw();
+        nodes.forEach(other => {
+          const dist = Math.hypot(node.x - other.x, node.y - other.y);
+          if (dist < 150) {
+            ctx.beginPath();
+            ctx.moveTo(node.x, node.y);
+            ctx.lineTo(other.x, other.y);
+            ctx.strokeStyle = `rgba(64, 196, 255, ${1 - dist / 150})`;
+            ctx.lineWidth = 1;
+            ctx.stroke();
+          }
+        });
+      });
+      requestAnimationFrame(animate);
+    }
+    animate();
+
+    // Form Submission with Loading and Improved Alerts
+    anime({
+      targets: '#formContainer',
+      translateY: [50, 0],
+      opacity: [0, 1],
+      easing: 'easeOutExpo',
+      duration: 1500
+    });
+
+    const form = document.getElementById('reportForm');
+    const toast = document.getElementById('toast');
+    const errorMessage = document.getElementById('errorMessage');
+    const submitButton = document.getElementById('submitButton');
+    const buttonText = document.getElementById('buttonText');
+    const loadingSpinner = document.getElementById('loadingSpinner');
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      // Reset previous messages
+      toast.classList.add('hidden');
+      errorMessage.classList.add('hidden');
+
+      // Show loading state
+      submitButton.disabled = true;
+      buttonText.textContent = 'Submitting...';
+      loadingSpinner.classList.remove('hidden');
+
+      try {
+        const formData = new FormData(form);
+        const res = await fetch('/submit', {
+          method: 'POST',
+          body: formData
+        });
+
+        const result = await res.json();
+        if (result.success) {
+          form.reset();
+          toast.classList.remove('hidden');
+          anime({
+            targets: '#toast',
+            opacity: [0, 1],
+            translateY: [-10, 0],
+            easing: 'easeOutBack',
+            duration: 800
+          });
+        } else {
+          errorMessage.textContent = `❌ ${result.error || 'Something went wrong. Please try again.'}`;
+          errorMessage.classList.remove('hidden');
+          anime({
+            targets: '#errorMessage',
+            opacity: [0, 1],
+            translateY: [-10, 0],
+            easing: 'easeOutBack',
+            duration: 800
+          });
+        }
+      } catch (err) {
+        errorMessage.textContent = '❌ Failed to submit. Please try again later.';
+        errorMessage.classList.remove('hidden');
+        anime({
+          targets: '#errorMessage',
+          opacity: [0, 1],
+          translateY: [-10, 0],
+          easing: 'easeOutBack',
+          duration: 800
+        });
+      } finally {
+        // Hide loading state
+        submitButton.disabled = false;
+        buttonText.textContent = '🚀 Submit Report';
+        loadingSpinner.classList.add('hidden');
+      }
+    });
+  </script>
+</body>
+</html>
