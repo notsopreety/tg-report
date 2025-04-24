@@ -7,8 +7,11 @@
     "start": "node server.js"
   },
   "keywords": [],
+  "engines": {
+    "node": ">=18.0.0"
+  },
   "author": "Samir Badaila",
-  "license": "ISC",
+  "license": "MIT",
   "description": "A simple telegram bot to report the status of a server",
   "dependencies": {
     "axios": "^1.8.4",
